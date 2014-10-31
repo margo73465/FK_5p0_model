@@ -26,12 +26,12 @@ Version 5p0 - entirely based on code from Daniel, and incorporated into a
 
 const double DT = 0.01;
 const double DX = 0.02;
-const double BCL = 400;
-const double stim_dur = 1.0;
-const double stim_amp = 1.0;
+const double BCL = 500;
+const double stim_dur = 4.0;
+const double stim_amp = 2.0;
 const int paceAP = 5;
 const int NX = 100;
-const int APD_rec_site = 49;
+const int APD_rec_site = 3;
 
 int heav (double x);
 
@@ -40,17 +40,17 @@ int main() {
   // Files
   FILE *output_V;
   FILE *output_CV;
-  FILE *output_APD;
-  output_V = fopen("FK4V_5p0_danielParams_V.dat", "w");
-  output_CV = fopen("FK4V_5p0_danielParams_CV.dat", "w");
-  output_APD = fopen("FK4V_5p0_danielParams_APD.dat", "w");
+  FILE *output_APD; 
+  output_V = fopen("FK4V_5p0_danielParams_BCL500_stimtest_V.dat", "w");
+  output_CV = fopen("FK4V_5p0_danielParams_BCL500_stimtest_CV.dat", "w");
+  output_APD = fopen("FK4V_5p0_danielParams_BCL500_stimtest_APD.dat", "w");
 
   // Variables
   int m, p, q, r;
   double tau_v_minus, tau_so;
   double dw_dt, dv_dt, dd_dt, du_dt;
   double v[NX], w[NX], d[NX], u[NX], tempu[NX], V[NX], VP[NX];
-  double I_fi[NX], I_so[NX], I_si[NX], I_stim;
+  double I_fi[NX], I_so[NX], I_si[NX], I_stim, cell_stim;
   double t, t_end, stim_time;
   int i, j, k, N;
   long int n;
@@ -65,7 +65,7 @@ int main() {
   int count = 0;
 
   // Restitution protocol loop
-  for(i = 0; i < size; i++) {
+  for(i = 0; i < 1; i++) {
 
     t = 0.0;
     n = 0;
@@ -75,7 +75,7 @@ int main() {
     t_end = paceAP * BCL + 1000.0;
 
     // APD & CV variables
-    double V_max = -100.0, V_low = -73.0, V_90;
+    double V_max = -100.0, V_low = -80.26, V_90;
     double APD, APD_end, APD_start = 0.0, obj_APD;
     double CV_start = 0.0;
 
@@ -131,7 +131,11 @@ int main() {
 
       // Cable loop
       for (j = 0; j < NX; j++) {
-        
+
+	cell_stim = 0.0;
+	if (j < 5)
+	  cell_stim = I_stim;
+
         m = heav(u[j] - u_v);
         p = heav(u[j] - u_na);
         q = heav(u[j] - u_w);
@@ -154,7 +158,7 @@ int main() {
         I_so[j] = (u[j] - u_o) * (1 - heav(u[j] - u_c)) / tau_o + heav(u[j] - u_c) / tau_so;
         I_si[j] = -w[j] * d[j] / tau_si;
 
-        du_dt = - (I_fi[j] + I_so[j] + I_si[j] - I_stim);
+        du_dt = - (I_fi[j] + I_so[j] + I_si[j] - cell_stim);
         tempu[j] = tempu[j] + DT * du_dt;
 
       } // End cable loop
@@ -178,21 +182,22 @@ int main() {
       } // End PDE loop
 
       // CV
-      if (N == paceAP - 1) {
+      if (N == paceAP) {
         if (V[19]>=-40. && VP[19]<-40.) CV_start = t;
         if (V[79]>=-40. && VP[79]<-40.) {
-        //output_CV = fopen(output_CV_filename, "w");
-        fprintf(output_CV,"%.2f\t%d\t%f\n", t, DI[i], (60.0 * DX / (t - CV_start) * 1000.0));
-        //fclose(output_CV);
+	  //output_CV = fopen(output_CV_filename, "w");
+	  printf("time = %f\t t-CV_start = %f\t DX = %f\n", t, t - CV_start, DX);
+	  fprintf(output_CV,"%.2f\t%d\t%f\n", t, DI[i], (60.0 * DX / (t - CV_start) * 1000.0));
+	  //fclose(output_CV);
         }
       }
 
       //APD_90
       if (n == stim_time - 1){
-        V_low = V[APD_rec_site];  
+        //V_low = V[APD_rec_site];  
         V_max = -100.0;
         //actual_DI = t - APD_end;
-        //printf("DI = %f, APD reset, t = %f\n", DI, t);
+        //printf("DI = %d, APD reset, t = %f\n", DI[i], t);
       }
       if (V[APD_rec_site] > V_max) {
         V_max = V[APD_rec_site];
@@ -204,11 +209,12 @@ int main() {
         if(N < paceAP)
           stim_time = (N + 1) * BCL / DT;
         else if(N == paceAP){
-          stim_time = n + N_DI; 
-          APD = t - APD_start;
-          APD_end = t;
-          count++;
+	  stim_time = n + N_DI; 
         }
+	APD = t - APD_start;
+	APD_end = t;
+	count++;
+	//printf("APD = %f\t time = %f\n", APD, t);
       }
 
       for (k = 0; k < NX; k++) {
@@ -216,13 +222,14 @@ int main() {
       }
 
       if (n % 100 == 0)
-        fprintf(output_V, "%.1f\t%f\t%f\n", t, u[19], u[79]);
+        fprintf(output_V, "%.1f\t%f\t%f\t%f\t%f\t%f\t%f\n", t, u[3], u[4], u[5], u[6], u[19], u[79]);
 
       n++;
       t = n * DT;
 
     } // End time loop
 
+    printf("APD now = %f\n", APD);
     obj_APD = 19.7238132356*log(DI[i]) + 237.7581328626; //LA S2 rest
     fprintf(output_APD, "%f\t%d\t%f\t%f\n", DI[i] + APD, DI[i], APD, obj_APD);
     
