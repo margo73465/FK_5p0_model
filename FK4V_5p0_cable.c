@@ -14,7 +14,7 @@ NOTES ON REFACTORING:
   td = tau_d, to = tau_o, tso = tau_so, tsi = tau_si
   xfi = I_fi, xso = I_so, xsi = I_si
 
-  tau_w_minus = in my version this has a similar to tau_v_minus
+  tau_w_minus = in my version this has a similar equation to tau_v_minus
   r_s = also exists in my version but not here
 
 Version 5p0 - entirely based on code from Daniel, and incorporated into a
@@ -26,12 +26,12 @@ Version 5p0 - entirely based on code from Daniel, and incorporated into a
 
 const double DT = 0.01;
 const double DX = 0.02;
-const double BCL = 500;
-const double stim_dur = 4.0;
-const double stim_amp = 2.0;
+const double BCL = 400;
+const double stim_dur = 3.0;
+const double stim_amp = 30.0;
 const int paceAP = 5;
 const int NX = 100;
-const int APD_rec_site = 3;
+const int APD_rec_site = 30;
 
 int heav (double x);
 
@@ -41,9 +41,9 @@ int main() {
   FILE *output_V;
   FILE *output_CV;
   FILE *output_APD; 
-  output_V = fopen("FK4V_5p0_danielParams_BCL500_stimtest_V.dat", "w");
-  output_CV = fopen("FK4V_5p0_danielParams_BCL500_stimtest_CV.dat", "w");
-  output_APD = fopen("FK4V_5p0_danielParams_BCL500_stimtest_APD.dat", "w");
+  output_V = fopen("FK4V_5p0_danielParams_BCL400_danielStim_V.dat", "w");
+  output_CV = fopen("FK4V_5p0_danielParams_BCL400_danielStim_CV.dat", "w");
+  output_APD = fopen("FK4V_5p0_danielParams_BCL400_danielStim_APD.dat", "w");
 
   // Variables
   int m, p, q, r;
@@ -65,7 +65,7 @@ int main() {
   int count = 0;
 
   // Restitution protocol loop
-  for(i = 0; i < 1; i++) {
+  for(i = 0; i < size; i++) {
 
     t = 0.0;
     n = 0;
@@ -132,9 +132,9 @@ int main() {
       // Cable loop
       for (j = 0; j < NX; j++) {
 
-	cell_stim = 0.0;
-	if (j < 5)
-	  cell_stim = I_stim;
+        cell_stim = 0.0;
+        if (j < 5)
+          cell_stim = I_stim;
 
         m = heav(u[j] - u_v);
         p = heav(u[j] - u_na);
@@ -163,32 +163,55 @@ int main() {
 
       } // End cable loop
        
-      // Laplacian (PDE solver) 
-      for (k = 0; k < NX; k++) {
-        if (k != 0 && k != NX - 1) {
-          u[k] = tempu[k] + DT * (D * (tempu[k + 1] + tempu[k - 1] - 2.0 * tempu[k]) / pow(DX,2.0));
+      // // Laplacian (PDE solver) 
+      // for (k = 0; k < NX; k++) {
+      //   if (k != 0 && k != NX - 1) {
+      //     //u[k] = tempu[k] + DT * (D * (tempu[k + 1] + tempu[k - 1] - 2.0 * tempu[k]) / pow(DX,2.0) - (I_fi[j] + I_so[j] + I_si[j] - cell_stim));
+      //     u[k] = tempu[k] + DT * (D * (tempu[k + 1] + tempu[k - 1] - 2.0 * tempu[k]) / pow(DX,2.0));
+      //   }
+      //   else {
+      //     if (k == 0) {
+      //       //preV2 = preV1;
+      //       //preV1 = u[k];
+      //       //u[k] = tempu[k] + DT * (D * (tempu[k + 1] - tempu[k]) / pow(DX,2.0) - (I_fi[j] + I_so[j] + I_si[j] - cell_stim));
+      //       u[k] = tempu[k] + DT * (D * (tempu[k + 1] - tempu[k]) / pow(DX,2.0));
+      //     }
+      //     else {
+      //       //u[k] = tempu[k] + DT * (D * (tempu[k - 1] - tempu[k]) / pow(DX,2.0) - (I_fi[j] + I_so[j] + I_si[j] - cell_stim));
+      //       u[k] = tempu[k] + DT * (D * (tempu[k - 1] - tempu[k]) / pow(DX,2.0));
+      //     }
+      //   }
+      //   V[k] = 85.7 * u[k] - 84.0;
+      // } // End PDE loop
+
+      // PDE all inner grid points
+      int cc, y;
+      for (cc = 0; cc < 5; cc++) {
+        for (y = 1; y < NX-1; y++)  {
+          u[y] = DT/(DX * DX * 5) * D * (tempu[y + 1] + tempu[y - 1] - 2.0 * tempu[y]) + tempu[y];
         }
-        else {
-          if (k == 0) {
-            //preV2 = preV1;
-            //preV1 = u[k];
-            u[k] = tempu[k] + DT * (D * (tempu[k + 1] - tempu[k]) / pow(DX,2.0));
-          }
-          else {
-            u[k] = tempu[k] + DT * (D * (tempu[k - 1] - tempu[k]) / pow(DX,2.0));
-          }
+      
+        // boundaries
+        u[0] = u[2];
+        u[NX - 1] = u[NX - 3];
+      
+        // update voltage in each cell to new value from PDE
+        for (y = 0; y < NX; y++) {
+          tempu[y] = u[y];
+          V[y] = 85.7*u[y] - 84.0;
+          //dV[y] = V[y] - VP[y];
         }
-        V[k] = 85.7 * u[k] - 84.0;
-      } // End PDE loop
+      }
+
 
       // CV
       if (N == paceAP) {
         if (V[19]>=-40. && VP[19]<-40.) CV_start = t;
         if (V[79]>=-40. && VP[79]<-40.) {
-	  //output_CV = fopen(output_CV_filename, "w");
-	  printf("time = %f\t t-CV_start = %f\t DX = %f\n", t, t - CV_start, DX);
-	  fprintf(output_CV,"%.2f\t%d\t%f\n", t, DI[i], (60.0 * DX / (t - CV_start) * 1000.0));
-	  //fclose(output_CV);
+          //output_CV = fopen(output_CV_filename, "w");
+          printf("time = %f\t t-CV_start = %f\t DX = %f\n", t, t - CV_start, DX);
+          fprintf(output_CV,"%.2f\t%d\t%f\n", t, DI[i], (60.0 * DX / (t - CV_start) * 1000.0));
+          //fclose(output_CV);
         }
       }
 
@@ -209,20 +232,24 @@ int main() {
         if(N < paceAP)
           stim_time = (N + 1) * BCL / DT;
         else if(N == paceAP){
-	  stim_time = n + N_DI; 
+          stim_time = n + N_DI; 
         }
-	APD = t - APD_start;
-	APD_end = t;
-	count++;
-	//printf("APD = %f\t time = %f\n", APD, t);
+        APD = t - APD_start;
+        APD_end = t;
+        count++;
+        //printf("APD = %f\t time = %f\n", APD, t);
       }
 
       for (k = 0; k < NX; k++) {
         VP[k] = V[k];
       }
 
-      if (n % 100 == 0)
-        fprintf(output_V, "%.1f\t%f\t%f\t%f\t%f\t%f\t%f\n", t, u[3], u[4], u[5], u[6], u[19], u[79]);
+      if (n % 100 == 0) {
+        for (j = 0; j < NX; j++) {
+          fprintf(output_V, "%f\t", u[j]);
+        }
+        fprintf(output_V, "\n");
+      }
 
       n++;
       t = n * DT;
