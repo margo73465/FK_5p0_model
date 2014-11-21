@@ -260,7 +260,7 @@ void solver_wave::solving()
         {
             
             if (k!=0 && k!=NX-1) {
-                u[k]=tempu[k]+DT*(D*(tempu[k+1]+tempu[k-1]-2*tempu[k])/pow(DX,2.0)-(xfi[k]+xso[k]+xsi[k]-xstim[k]));
+                u[k] = tempu[k] + DT * (D * (tempu[k+1] + tempu[k-1] - 2*tempu[k])/pow(DX,2.0) - (xfi[k] + xso[k] + xsi[k] - xstim[k]));
             }
             else {
                 if (k==0) {
@@ -646,7 +646,7 @@ struct Funk
         {
             baseline=0.1*sol2.v30[maxmarker2[j]];
             
-            for (int k=maxmarker2[j]-10./DT;k<endmax2[j]; k++) {
+            for (int k=maxmarker2[j]-10./DT; k < endmax2[j]; k++) {
                 
                 if (sol2.v30[k]>=baseline && sol2.v30[k-1]<baseline){
                     b = sol2.v30[k] - slope2[k-1]*k;
