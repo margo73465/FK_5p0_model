@@ -763,7 +763,7 @@ int main(int argc, char *argv[])
   for(int i=0;i<NDIM;i++)
   {
     infile1>>para[i];
-
+    cout << para[i] << endl;
   }
   infile1.close();
   
