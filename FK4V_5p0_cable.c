@@ -230,7 +230,7 @@ int main() {
       }
       //if (V[APD_rec_site] <= V_90 && VP[APD_rec_site] > V_90 && n - stim_time > 50){
       double baseline = 85.7*0.1 - 84.0;
-      if (V[APD_rec_site] <= baseline && VP[APD_rec_site] && n - stim_time > 50) {
+      if (V[APD_rec_site] <= baseline && VP[APD_rec_site] > baseline && n - stim_time > 50) {
         if(N < paceAP)
           stim_time = (N + 1) * BCL / DT;
         else if(N == paceAP){

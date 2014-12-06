@@ -191,6 +191,35 @@ int main() {
       }
     }
 
+    //APD_90
+    if (i == stim_time - 1){
+      //V_low = V[APD_rec_site];  
+      V_max = -100.0;
+      //actual_DI = t - APD_end;
+      //printf("DI = %d, APD reset, t = %f\n", DI[i], t);
+    }
+    if (u[APD_rec_site] > V_max) {
+      V_max = u[APD_rec_site];
+      V_90 = V_max - (V_max - V_low)*0.90;
+      APD_start = t;
+      //printf("APD_start = %f \t V_max = %f \t V_90 = %f\n",APD_start,V_max,V_90);
+    }
+    //if (V[APD_rec_site] <= V_90 && VP[APD_rec_site] > V_90 && n - stim_time > 50){
+    //double baseline = 85.7 * 0.1 - 84.0;
+    double baseline = V_90;
+    if (V[APD_rec_site] <= baseline && VP[APD_rec_site] > baseline && n - stim_time > 50) {
+      if(N < paceAP)
+        stim_time = (N + 1) * BCL / DT;
+      else if(N == paceAP){
+        stim_time = n + N_DI; 
+      }
+      APD = t - APD_start;
+      APD_end = t;
+      count++;
+      printf("APD = %f\t time = %f\n", APD, t);
+    }
+
+    // Output
     if (i % 10 == 0) {
       for (k = 0; k < NX; k++) {
         output_file << u[k] << " ";
@@ -198,5 +227,5 @@ int main() {
       output_file << endl;
     }
 
-  }
+  } // End of time loop
 }
