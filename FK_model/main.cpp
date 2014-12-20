@@ -367,17 +367,17 @@ struct Funk
     for (i=0; i<savepoints-2; i++) {
       if (slope3[i]>0.0 && slope3[i+1]<=-0.0 && sol2.v70[i+1]>0.1) { //if slope changes sign
         //if (slope3[i]>0.0 && slope3[i+1]<=-0.0) {
-        if (maxindex>NEXCITE) { //max index should never be greater than number of excitations
+        if (maxindex > NEXCITE) { //max index should never be greater than number of excitations
           printf("WRONG2, too many excitations %i\n",maxindex);
           return(1000);
         }
         
-        if (maxindex>=1) { //if we have already recorded at least one excitation
+        if (maxindex >= 1) { //if we have already recorded at least one excitation
           //APPLY S1
           if (numS1 == 0) { //looking for first S1 stim
-            if (i+1-maxmarker[maxindex-1]<100/savedt) {
-              if (sol2.v70[i+1]>sol2.v70[maxmarker[maxindex-1]]) {
-                maxmarker[maxindex-1]=i+1; //still from the last excitation, so don't increment index
+            if (i + 1 - maxmarker[maxindex - 1] < 100 / savedt) {
+              if (sol2.v70[i + 1] > sol2.v70[maxmarker[maxindex - 1]]) {
+                maxmarker[maxindex - 1] = i + 1; //still from the last excitation, so don't increment index
                 //just move up the time for maxmarker
               }
             }
@@ -387,7 +387,7 @@ struct Funk
               endmax[maxindex-1] = i+1;
             }
           }
-          else if(numS1<S1limit) { //now onto the next few S1 stimuli
+          else if(numS1 < S1limit) { //now onto the next few S1 stimuli
             //add check for still on same stim
             if(i+1 - lastS1Time < 100/savedt) {
               if(sol2.v70[i+1]>sol2.v70[lastS1Time]) {
@@ -400,9 +400,9 @@ struct Funk
             }
           }
           else { //either stil on last S1 stim or on an S2 stim
-            if(i+1 - lastS1Time < 100/savedt) {  //check for still on same stim
-              if(sol2.v70[i+1]>sol2.v70[lastS1Time]) {
-                lastS1Time = i+1; //same S1 stim, just move up lastStimTime
+            if(i + 1 - lastS1Time < 100/savedt) {  //check for still on same stim
+              if(sol2.v70[i + 1] > sol2.v70[lastS1Time]) {
+                lastS1Time = i + 1; //same S1 stim, just move up lastStimTime
               }
             }
             else {
