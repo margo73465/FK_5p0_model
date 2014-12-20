@@ -268,8 +268,29 @@ void solver_wave::solving()
           preV1 = u[k];
           u[k]=tempu[k]+DT*(D*(tempu[k+1]-tempu[k])/pow(DX,2.0)-(xfi[k]+xso[k]+xsi[k]-xstim[k]));
         }
+<<<<<<< HEAD
+        
+        for(k=0;k<NX;k++)
+        {
+            
+            if (k!=0 && k!=NX-1) {
+                u[k]=tempu[k]+DT*(D*(tempu[k+1]+tempu[k-1]-2*tempu[k])/pow(DX,2.0)-(xfi[k]+xso[k]+xsi[k]-xstim[k]));
+            }
+            else {
+                if (k==0) {
+                    preV2 = preV1;
+                    preV1 = u[k];
+                    u[k]=tempu[k]+DT*(D*(tempu[k+1]-tempu[k])/pow(DX,2.0)-(xfi[k]+xso[k]+xsi[k]-xstim[k]));
+                }
+                else {
+                    u[k]=tempu[k]+DT*(D*(tempu[k-1]-tempu[k])/pow(DX,2.0)-(xfi[k]+xso[k]+xsi[k]-xstim[k]));
+                }
+            }
+            
+=======
         else {
           u[k]=tempu[k]+DT*(D*(tempu[k-1]-tempu[k])/pow(DX,2.0)-(xfi[k]+xso[k]+xsi[k]-xstim[k]));
+>>>>>>> 9a82998d845697c5700f1884c8ffe71e97b99502
         }
       }
       
@@ -512,12 +533,22 @@ struct Funk
               lastS1Time2 = i+1;
             }
             
+<<<<<<< HEAD
+            for (int k=maxmarker2[j]-10./DT;k<endmax2[j]; k++) {
+                
+                if (sol2.v30[k]>=baseline && sol2.v30[k-1]<baseline){
+                    b = sol2.v30[k] - slope2[k-1]*k;
+                    maxslope2[j]=(baseline - b)/slope2[k-1];
+                    break;
+                }
+=======
           }
           else { //add check for still on same stim
             if(i+1 - lastS1Time2 < 100/savedt) {
               if(sol2.v30[i+1]>sol2.v30[lastS1Time2]) {
                 lastS1Time2 = i+1; //same S1 stim, just move up lastStimTime
               }
+>>>>>>> 9a82998d845697c5700f1884c8ffe71e97b99502
             }
             else {
               maxmarker2[maxindex2] = i+1; //maxindex and maxmarker should be zero in this case
