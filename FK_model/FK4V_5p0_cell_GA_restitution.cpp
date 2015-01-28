@@ -7,19 +7,12 @@
 #include <iostream>
 
 #define NDIM 21 //number of parameters, used to be 23
-#define EPS 1e-18
-#define NX 100 //number of divisions in cable ("cells") (use ~100 for 1D, 2 for 0D)
-#define NEXCITE 10 //number of excitations from stimulus current (-1 for APPLY S1)
 #define DT 0.01
-#define DX 0.02
-#define SPACING_INDEX 10
 #define S1limit 5
 #define BCL 400.
 
 #define xstimdur 3.0
-#define xstimamp 30.0
-#define STIM_rec_site 3
-#define APD_rec_site 70
+#define xstimamp 3
 
 double heav(double u);
 
@@ -32,7 +25,7 @@ double heav(double u) {
     return 0.0;
 }
 
-int main() {
+int main(int argc, char *argv[]) {
 
   long int n;
   double t;
@@ -47,9 +40,9 @@ int main() {
   double stim_time = BCL / DT;
 
   double dv, dw, dd, tso;
-  vector<double> u(NX), uP(NX), v(NX), w(NX), d(NX), tempu(NX + 1, 0.0);
-  vector<double> xfi(NX), xso(NX), xsi(NX), xstim(NX);
-  vector<double> para(NDIM);
+  double u = 0.0, uP = 0.0, v = 1.0, w = 1.0, d = 0.0, tempu;
+  double xfi, xso, xsi, xstim;
+  double para(NDIM);
   
   //----------------KNOW PARAMETERS------------------//
   double uo, um, una;
@@ -70,19 +63,13 @@ int main() {
     input_file >> para[i];
   }
   input_file.close();
-
+  
   // Restitution protocol parameters
   // int DI[] = {200, 180, 160, 140, 120, 100, 90, 80, 70, 60, 50, 40, 30, 25, 20, 15, 10, 5};
   int DI[] = {254.0690, 222.4222, 182.5915, 152.8019, 123.0218, 103.2425, 83.4569, 43.7630, 24.1447, 14.3405};
   int N_DI;
   int size = sizeof(DI)/sizeof(DI[0]);
 
-  for (j = 0; j < NX; j++) {
-    u[j] = 0.0;
-    v[j] = 1.0;
-    w[j] = 1.0;
-    d[j] = 0.0;
-  }
   
   //tvmm=10;
   uo = 0.0;
@@ -129,70 +116,45 @@ int main() {
 
     while (t < TOTALTIME) {
 
-      for(j = 0; j < NX; j++) {
-
-        // Stimlulus Current
-        if (n == stim_time && j == 0) {
-          numS1++;
-          cout << "STIM: n = " << n << " stim_time = " << stim_time << endl;
-        }
-        if (n - stim_time <= istimdur && n - stim_time > 0 && j < 5)
-          xstim[j] = xstimamp;
-        else 
-          xstim[j] = 0.0;
-
-        // Model Functions
-        tso = tsoa + (tsob - tsoa) * (1 + tanh((u[j] - uso) * xtso))/2.0;
-
-        dv = (1 - heav(u[j] - una)) * (1 - v[j]) / ((1 - heav(u[j] - uv)) * tvm + tvmm * heav(u[j] - uv)) - heav(u[j] - una) * v[j] / tvp;
-        dw = (1 - heav(u[j] - uw)) * (1 - w[j]) / twm - heav(u[j] - uw) * w[j] / twp;
-        dd = ((1 - heav(u[j] - ud)) / tsm + heav(u[j] - ud) / tsp) * ((1 + tanh(xk * (u[j] - ucsi))) / 2.0 - d[j]);
-
-        v[j] = v[j] + DT * dv;  //fast gate
-        w[j] = w[j] + DT * dw;  //slow gate
-        d[j] = d[j] + DT * dd;
-
-        // Currents
-        xfi[j] = -v[j] * heav(u[j] - una) * (u[j] - una) * (um - u[j]) / td;
-        xso[j] = (u[j] - uo) * (1 - heav(u[j] - uc)) / to + heav(u[j] - uc) / tso;
-        xsi[j] = -w[j] * d[j] / tsi;
-      
-      } // End cable loop
-
-      for (k = 0; k < NX; k++) {
-        tempu[k] = u[k];
+      // Stimlulus Current
+      if (n == stim_time && j == 0) {
+        numS1++;
+        cout << "STIM: n = " << n << " stim_time = " << stim_time << endl;
       }
+      if (n - stim_time <= istimdur && n - stim_time > 0 && j < 5)
+        xstim[j] = xstimamp;
+      else 
+        xstim[j] = 0.0;
 
-      // PDE Integration
-      for (k = 0; k < NX; k++) {
-        if (k != 0 && k != NX - 1) {
-          u[k] = tempu[k] + DT * (D * (tempu[k+1] + tempu[k-1] - 2*tempu[k])/pow(DX,2.0) - (xfi[k] + xso[k] + xsi[k] - xstim[k]));
-        }
-        else {
-          if (k == 0) {
-            preV2 = preV1;
-            preV1 = u[k];
-            u[k] = tempu[k] + DT * (D * (tempu[k + 1] - tempu[k]) / pow(DX,2.0) - (xfi[k] + xso[k] + xsi[k] - xstim[k]));
-          }
-          else {
-            u[k] = tempu[k] + DT * (D * (tempu[k - 1] - tempu[k]) / pow(DX,2.0) - (xfi[k] + xso[k] + xsi[k] - xstim[k]));
-          }
-        }
-      }
+      // Model Functions
+      tso = tsoa + (tsob - tsoa) * (1 + tanh((u[j] - uso) * xtso))/2.0;
+
+      dv = (1 - heav(u[j] - una)) * (1 - v[j]) / ((1 - heav(u[j] - uv)) * tvm + tvmm * heav(u[j] - uv)) - heav(u[j] - una) * v[j] / tvp;
+      dw = (1 - heav(u[j] - uw)) * (1 - w[j]) / twm - heav(u[j] - uw) * w[j] / twp;
+      dd = ((1 - heav(u[j] - ud)) / tsm + heav(u[j] - ud) / tsp) * ((1 + tanh(xk * (u[j] - ucsi))) / 2.0 - d[j]);
+
+      v[j] = v[j] + DT * dv;  //fast gate
+      w[j] = w[j] + DT * dw;  //slow gate
+      d[j] = d[j] + DT * dd;
+
+      // Currents
+      xfi[j] = -v[j] * heav(u[j] - una) * (u[j] - una) * (um - u[j]) / td;
+      xso[j] = (u[j] - uo) * (1 - heav(u[j] - uc)) / to + heav(u[j] - uc) / tso;
+      xsi[j] = -w[j] * d[j] / tsi;
+
 
       // Determine time of next stimulus using APD_90
       if (n == stim_time - 1) {
         u_max = -1.0;
       }
-      if (u[STIM_rec_site] > u_max) {
-        u_max = u[APD_rec_site];
+      if (u > u_max) {
+        u_max = u;
         u_90 = u_max - (u_max - u_low) * 0.90;
         APD_start = t;
       }
-      if (u[STIM_rec_site] <= u_90 && uP[STIM_rec_site] > u_90 && n - stim_time > 50) {
+      if (u <= u_90 && uP > u_90 && n - stim_time > 50) {
         APD = t - APD_start;
-        // cout << "time = " << t << " APD = " << APD << " u_90 = " << u_90 << endl;
-
+        cout << "time = " << t << " APD_2 = " << APD_2 << " u_90 = " << u_90 << endl;
         if (numS1 < S1limit)
           stim_time = (numS1 + 1) * S1time;
         else if (numS1 == S1limit) {
@@ -201,31 +163,11 @@ int main() {
         }
       }
 
-      // Record APDs at APD_rec_site
-      if (n == stim_time - 1) {
-        u_max_2 = -1.0;
-      }
-      if (u[APD_rec_site] > u_max_2) {
-        u_max_2 = u[APD_rec_site];
-        u_90_2 = u_max_2 - (u_max_2 - u_low_2) * 0.90;
-        // cout << "u_90_2 = " << u_90_2 << endl;
-        APD_start_2 = t;
-      }
-      if (u[APD_rec_site] <= u_90_2 && uP[APD_rec_site] > u_90_2 && n - stim_time > 5000) {
-        APD_2 = t - APD_start_2;
-        cout << "time = " << t << " APD_2 = " << APD_2 << " u_90 = " << u_90 << endl;
-      }
-
-      for (k = 0; k < NX; k++) {
-        uP[k] = u[k];
-      }
-
+      uP = u;
+      
       // Output
       if (n % 10 == 0) {
-        for (k = 0; k < NX; k++) {
-          output_voltage << u[k] << " ";
-        }
-        output_voltage << endl;
+        output_voltage << u[k] << " ";
       }
 
       n++; 
@@ -234,8 +176,8 @@ int main() {
     } // End of time loop
     
     obj_APD = 19.7238132356 * log(DI[i]) + 237.7581328626; //LA S2 rest
-    output_APD << DI[i] + APD_2 << "\t" << DI[i] << "\t" << APD_2 << "\t" << obj_APD << endl;
-    cout << "DI = " << DI[i] << " APD = " << APD_2 << " obj_APD = " << obj_APD << endl;
+    output_APD << DI[i] + APD << "\t" << DI[i] << "\t" << APD << "\t" << obj_APD << endl;
+    cout << "DI = " << DI[i] << " APD = " << APD << " obj_APD = " << obj_APD << endl;
     cout << "----------------------------------------" << endl;
     
   } // End s2 loop

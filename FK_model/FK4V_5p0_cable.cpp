@@ -109,7 +109,6 @@ int main() {
   tsi = para[18]; //slow current time variable, max APD
   D = para[19]; //related to density, mostly changes CV, but can effect everything
   tvmm = para[20]; //controls the steepness of the CV curve (chaos 8)
-  
   // Restitution protocol loop
   for(i = 0; i < size; i++) {
 
