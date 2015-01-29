@@ -55,15 +55,20 @@ int main(int argc, char *argv[]) {
   double uc, uv, uw, ud, tvm, tvp, twm, twp, tsp, tsm, ucsi; 
   double xk, td, to, tsoa, tsob, uso, xtso, tsi, D, tvmm;
 
-  for(int i = 1; i < argc - 1; i++){
-    para[i-1] = atof(argv[i]);
-    cout << para[i-1] << endl;
+  // for(int i = 1; i < argc - 1; i++){
+  //   para[i-1] = atof(argv[i]);
+  //   cout << para[i-1] << endl;
+  // }
+
+  ifstream input_file("best_params_FK4V_5p0_cell_GA_MAP_fixed_offset.dat", ios::in);
+  ifstream objective("scaled_MAP.dat", ios::in);
+  // ofstream out_error(argv[argc - 1], ios::out);
+  ofstream out_voltage("FK4V_5p0_cell_GA_MAP_fixed_offset_voltage.dat", ios::out);
+
+  for (int i = 0; i < NDIM; i++) {
+    input_file >> para[i];
   }
 
-  // FILE *out_error;
-  ofstream out_error(argv[argc - 1], ios::out);
-  ofstream out_voltage("FK4V_5p0_cell_GA_MAP_fixed_offset_voltage.dat", ios::out);
-  ifstream objective("scaled_MAP.dat", ios::in);
 
   //tvmm=10;
   uo = 0.0;
@@ -126,7 +131,7 @@ int main(int argc, char *argv[]) {
       objective >> obj_u; 
       diff = (u - obj_u) * (u - obj_u);
       sum_diff += diff;
-      out_voltage << t << "\t" << u << "\t" << obj_u << "\t" << diff << "\t" << sum_diff << endl;
+      out_voltage << t << "\t" << u << "\t" << obj_u << "\t" << endl;
     }
 
     uP = u;
@@ -139,7 +144,11 @@ int main(int argc, char *argv[]) {
   if(sum_diff != sum_diff) {
     sum_diff = 9999999999;
   }
+  // } else if (sum_diff < 0.0001) {
+  //   cout << "too small!" << endl;
+  //   sum_diff = 0.0001;
+  // }
 
   cout << sum_diff << endl;
-  out_error << sum_diff << endl;
+  // out_error << sum_diff << endl;
 }

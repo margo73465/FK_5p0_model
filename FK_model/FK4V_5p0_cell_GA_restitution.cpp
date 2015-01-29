@@ -27,14 +27,13 @@ double heav(double u) {
 
 int main(int argc, char *argv[]) {
 
+  // Simulation parameters
   long int n;
   double t;
   int istimdur = round(xstimdur/DT);
   int i, j, k;
   double TOTALTIME = S1limit * BCL + 1000.0;
   
-  double preV1 = 0, preV2 = 0;
-
   int numS1 = 0; //count how many S1 stim was applied (have ~5 inbetween each S2 stim)
   float S1time = BCL / DT; //CL(cycle length) between S1 stim
   double stim_time = BCL / DT;
