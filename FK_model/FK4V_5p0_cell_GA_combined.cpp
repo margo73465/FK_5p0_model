@@ -37,14 +37,16 @@ int main(int argc, char *argv[]) {
 
   // State variables
   double du, dv, dw, dd, tso;
-  double u = 0.0, uP = 0.0, v = 1.0, w = 1.0, d = 0.0, tempu;
+  double u = 0.0, uP = 0.0, v = 1.0, w = 1.0, d = 0.0;
   double xfi, xso, xsi, xstim;
 
   // Parameter vector
   vector<double> para(NDIM);
 
   // GA fitness function parameters
-  double diff, obj_APD, sum_diff = 0.0;
+  double diff_APD, obj_APD, sum_diff_APD = 0.0;
+  double diff_u, obj_u, sum_diff_u = 0.0;
+  double total_error;
   
   //----------------KNOW PARAMETERS------------------//
   double uo, um, una;
@@ -52,14 +54,23 @@ int main(int argc, char *argv[]) {
   double uc, uv, uw, ud, tvm, tvp, twm, twp, tsp, tsm, ucsi; 
   double xk, td, to, tsoa, tsob, uso, xtso, tsi, D, tvmm;
 
+
+  
   // for(int i = 1; i < argc - 1; i++){
   //   para[i-1] = atof(argv[i]);
   //   // cout << para[i-1] << endl;
   // }
 
+  // ifstream input_file("best_params_FK4V_5p0_cell_GA_combined_restitution_scale_10000.dat", ios::in);
   ifstream input_file("even_better_params_FK4V_5p0_cell_GA_restitution.dat", ios::in);
-  ofstream output_APD("FK4V_5p0_cell_GA_restitution_evenBetterParams.dat", ios::out);
-  ofstream out_error(argv[argc - 1], ios::out);
+  // ifstream input_file("xfinal.dat");
+  // ofstream output_APD("FK4V_5p0_cell_GA_combined_restitution_scale_10000_APD.dat", ios::out);
+  ofstream output_APD("FK4V_5p0_cell_GA_restitution_evenBetterParams_APD.dat");
+  // ofstream output_voltage("FK4V_5p0_cell_GA_combined_restitution_scale_10000_voltage.dat", ios::out);
+  ofstream output_voltage("FK4V_5p0_cell_restitution_evenBetterParams_voltage.dat");
+
+  ifstream objective("scaled_MAP.dat", ios::in);
+  // ofstream out_error(argv[argc - 1], ios::out);
 
   // Read parameters from file
   if(!input_file || !output_APD) {
@@ -71,7 +82,8 @@ int main(int argc, char *argv[]) {
     input_file >> para[i];
   }
   input_file.close();
-  
+
+
   // Restitution protocol parameters
   int DI[] = {200, 180, 160, 140, 120, 100, 90, 80, 70, 60, 50, 40, 30, 25, 20, 15, 10, 5};
   // double DI[] = {254.0690, 222.4222, 182.5915, 152.8019, 123.0218, 103.2425, 83.4569, 43.7630, 24.1447, 14.3405};
@@ -172,12 +184,14 @@ int main(int argc, char *argv[]) {
         }
       }
 
-      uP = u;
-      
-      // Output
-      if (n % 10 == 0) {
-        // output_voltage << u << " ";
+      if (i == 0 && numS1 == S1limit - 1 && n % N_BCL > 300 && n % N_BCL < 50000 && n % 100 == 0) {
+        objective >> obj_u; 
+        diff_u = (u - obj_u) * (u - obj_u);
+        sum_diff_u += diff_u;
+        output_voltage << t << "\t" << u << "\t" << obj_u << "\t" << endl;
       }
+
+      uP = u;
 
       n++; 
       t = n * DT;
@@ -186,16 +200,23 @@ int main(int argc, char *argv[]) {
     
     // Calculate error
     obj_APD = 19.7238132356 * log(DI[i]) + 237.7581328626; //LA S2 rest
-    diff = (APD - obj_APD) * (APD - obj_APD);
-    sum_diff += diff;
+    diff_APD = (APD - obj_APD) * (APD - obj_APD);
+    sum_diff_APD += diff_APD;
 
     // Output
     output_APD << DI[i] + APD << "\t" << DI[i] << "\t" << APD << "\t" << obj_APD << endl;
-    cout << "DI = " << DI[i] << " APD = " << APD << " obj_APD = " << obj_APD << endl;
+    // cout << "DI = " << DI[i] << " APD = " << APD << " obj_APD = " << obj_APD << endl;
     // cout << "----------------------------------------" << endl;
     
   } // End s2 loop
 
-  // out_error << sum_diff << endl;
-  cout<< sum_diff << endl;
+  total_error = sum_diff_u + (sum_diff_APD);
+
+  // out_error << total_error << endl;
+  // out_error << sum_diff_u << endl;
+  // out_error << sum_diff_APD << endl;
+
+  cout << "APD error = " << sum_diff_APD << endl;
+  cout << "Voltage error = " << sum_diff_u << endl;
+  cout << total_error << endl;
 }

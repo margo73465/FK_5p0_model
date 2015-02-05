@@ -22,3 +22,19 @@ for i = 1:(size(down,1) - 1)
     dVmax(i,2) = I + up(i,1);
     dVmax(i,3) = voltage(dVmax(i,2));
 end
+
+%% Add generation numbers to evaluated solutions file
+
+shape(:,23) = 0;
+
+for i=2:(size(shape,1))
+    shape(i,23) = floor((i - 2) / 500) + 1;
+end
+
+%%
+restitution(:,23) = 0;
+
+for i=2:(size(restitution,1))
+    restitution(i,23) = floor((i - 2) / 500) + 1;
+end
+
